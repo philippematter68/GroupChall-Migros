@@ -50,12 +50,15 @@ def create_base_map():
     # Set up the layout for the base map
     base_map.update_layout(
         mapbox_style="open-street-map",
-        mapbox_zoom=9.5,  # Adjust zoom level
-        mapbox_center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()}  # Adjust center (latitude, longitude)
+        mapbox_zoom=9.5, 
+        mapbox_center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()}
     )
     return base_map
 
-
+# Initialize base map if not in session state
+if 'base_map' not in st.session_state:
+    st.session_state.base_map = create_base_map()
+    
 # Layer Public transport
 ############################################
 def add_PT(base_map):
@@ -63,14 +66,14 @@ def add_PT(base_map):
         APPENZELL,
         geojson=APPENZELL.geometry,
         locations=APPENZELL.index,
-        color="OeV_Erreichb_EW",  # Replace with the name of a column to color by
+        color="OeV_Erreichb_EW",  
         mapbox_style="open-street-map",
         center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()},
-        zoom=9.5,  # Adjust zoom level as needed
-        opacity=0.5
-
-        # name = 'Accessibility by public transport (points)'
+        zoom=9.5, 
+        opacity=0.5,
+        labels={'OeV_Erreichb_EW': 'Public Transport Accessibility'}
     )
+    PT_layer.update_traces(showlegend= True, name = 'Public Transport Accessibility')
     base_map.add_trace(PT_layer.data[0])
     return base_map
 
@@ -78,9 +81,9 @@ def add_PT(base_map):
 ############################################
 def add_COMP(base_map):
     COMP_layer = go.Scattermapbox(
-    lat=COMP['Latitude'],  # Latitude values
-    lon=COMP['Longitude'],  # Longitude values
-    mode='markers',  # Set mode to include both markers and lines
+    lat=COMP['Latitude'],  
+    lon=COMP['Longitude'],  
+    mode='markers', 
     marker=dict(size=10,  color='red', opacity= 0.7), 
     text= COMP['Name'],
     hoverinfo='text',
@@ -93,10 +96,10 @@ def add_COMP(base_map):
 ############################################
 def add_MIGROS(base_map):
     MIGROS_layer = go.Scattermapbox(
-    lat=MIGROS['Latitude'],  # Latitude values
-    lon=MIGROS['Longitude'],  # Longitude values
-    mode='markers',  # Set mode to include both markers and lines
-    marker=dict(size=20,  color='green', opacity= 0.7), 
+    lat=MIGROS['Latitude'],  
+    lon=MIGROS['Longitude'],  
+    mode='markers',  
+    marker=dict(size=10,  color='green', opacity= 0.7), 
     text= MIGROS['Name'],
     hoverinfo='text',
     name = "Migros"   
@@ -116,9 +119,16 @@ if checkbox_MIGROS:
 if not any([checkbox_PT, checkbox_COMP, checkbox_MIGROS]):
     st.session_state.base_map = create_base_map()
 
-
-
-
+# Update legend and layout only once at the end of the code
+st.session_state.base_map.update_layout(
+    legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="left",
+        x=0.01
+    )
+)
+# and display the chart:
 st.plotly_chart(st.session_state.base_map, use_container_width=True)
 
 st.subheader('Data sources')
