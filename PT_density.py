@@ -35,6 +35,7 @@ st.write('The analysis is based on: \n - the density of existing stores, \n - th
 # Layout: Checkboxes to choose which layer to display:
 st.sidebar.subheader('Layers')
 PT = st.sidebar.checkbox('Accessibility by public tranport')
+opacity_PT = st.sidebar.slider('Opacity', min_value=0, max_value=10)/100 # does not do anything
 st.sidebar.checkbox('Population density')
 st.sidebar.checkbox('Competitors')
 st.sidebar.checkbox('Migros stores')
@@ -70,7 +71,7 @@ def add_PT(base_map):
         mapbox_style="open-street-map",
         center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()},
         zoom=9.5,  # Adjust zoom level as needed
-        opacity=0.5,
+        opacity=opacity_PT,
     )
     base_map.add_trace(PT_layer.data[0])
     return base_map
@@ -87,7 +88,7 @@ else:
 st.plotly_chart(st.session_state.base_map, use_container_width=True)
 
 st.subheader('Data sources')
-st.write('Accessibility by public transport: https://data.geo.admin.ch/browser/index.html#/collections/ch.are.erreichbarkeit-oev?.language=en')
+st.write('Accessibility per traffic zone in public transport depending on the public transport travel times from all zones in Switzerland to the traffic zone and the number of inhabitants and jobs in the traffic zone. Source: National Passenger Traffic Model (NPVM) of DETEC.:\n https://data.geo.admin.ch/browser/index.html#/collections/ch.are.erreichbarkeit-oev?.language=en')
 
 
 
