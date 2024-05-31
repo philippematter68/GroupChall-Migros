@@ -89,6 +89,7 @@ def add_COMP(base_map):
     hoverinfo='text',
     name="Competitors"   
     )
+    # COMP_layer.update_layout(showlegend= True, name = 'Competitors')
     base_map.add_trace(COMP_layer)
     return base_map
 
