@@ -81,11 +81,10 @@ st.write('The analysis is based on: \n - the density of existing stores, \n - th
 
 # Layout: Checkboxes to choose which layer to display:
 st.sidebar.subheader('Layers')
-checkbox_PT = st.sidebar.checkbox('Accessibility by public tranport')
-checkbox_COMP = st.sidebar.checkbox('Competitors')
 checkbox_MIGROS =st.sidebar.checkbox('Migros stores')
-checkbox_StatPop = st.sidebar.checkbox("Show StatPop Layer")
-
+checkbox_COMP = st.sidebar.checkbox('Competitors')
+checkbox_StatPop = st.sidebar.checkbox("Population density")
+checkbox_PT = st.sidebar.checkbox('Accessibility by public tranport')
 
 
 # EMPTY BASE map:
@@ -176,26 +175,27 @@ def add_StatPop(base_map, geojson_data, squares_gdf):
 
 
 # Add the layers to the base map, IF CHECKED:
-if checkbox_PT:
-    base_map = add_PT(base_map)
+
 if checkbox_COMP:
     base_map = add_COMP(base_map)
 if checkbox_MIGROS:
     base_map = add_MIGROS(base_map)
 if checkbox_StatPop:
     base_map = add_StatPop(base_map, geojson_data, squares_gdf)
+if checkbox_PT:
+    base_map = add_PT(base_map)
 
 # Update layout with custom figure size and horizontal color bars below the figure
 base_map.update_layout(
-    width=1200,  # Set the desired width
-    height=800,  # Set the desired height
+    width=1000,  # Set the desired width
+    height=600,  # Set the desired height
     coloraxis1=dict(
         colorscale="Viridis", 
         colorbar=dict(
-            title="PT Accessibility",
+            title="Public Transport accessibility",
             orientation="h",  # Horizontal orientation
-            x=0.5,  # Centered horizontally
-            y=-0.2,  # Position below the figure
+            x=0.75,  # Centered horizontally
+            y=-0.1,  # Position below the figure
             xanchor="center",
             yanchor="top",
             len=0.5  # Length of the color bar
@@ -204,10 +204,10 @@ base_map.update_layout(
     coloraxis2=dict(
         colorscale='Plasma',  # Updated to use custom "Oranges" color scale
         colorbar=dict(
-            title="Population Density",
+            title="Population density",
             orientation="h",  # Horizontal orientation
-            x=0.5,  # Centered horizontally
-            y=-0.4,  # Position further below the first color bar
+            x=0.25,  # Centered horizontally
+            y=-0.1,  # Position further below the first color bar
             xanchor="center",
             yanchor="top",
             len=0.5  # Length of the color bar
