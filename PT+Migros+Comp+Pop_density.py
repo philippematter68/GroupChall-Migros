@@ -7,6 +7,7 @@ from urllib.request import urlopen
 import json
 from shapely.geometry import Polygon
 from copy import deepcopy
+import plotly.colors as pcolors
 
 # Ensure necessary imports are included at the top
 
@@ -66,6 +67,11 @@ if APPENZELL.crs != "EPSG:4326":
 # Load StatPop data
 squares_gdf, geojson_data = load_statpop_data()
 
+# Get the "Oranges" color scale
+oranges_scale = pcolors.sequential.Oranges
+
+# Create a custom color scale starting from the midpoint of "Oranges"
+custom_oranges_scale = oranges_scale[len(oranges_scale)//2:]
 
 # Display in Streamlit
 st.title("Migros locations in Appenzell Innerrhoden")
@@ -126,7 +132,7 @@ def add_COMP(base_map):
     lat=COMP['Latitude'],  
     lon=COMP['Longitude'],  
     mode='markers', 
-    marker=dict(size=10,  color='red', opacity= 0.7), 
+    marker=dict(size=15,  color='red', opacity= 0.7), 
     text= COMP['Name'],
     hoverinfo='text',
     name="Competitors"   
@@ -141,7 +147,7 @@ def add_MIGROS(base_map):
     lat=MIGROS['Latitude'],  
     lon=MIGROS['Longitude'],  
     mode='markers',  
-    marker=dict(size=10,  color='green', opacity= 0.7), 
+    marker=dict(size=15,  color='green', opacity= 0.7), 
     text= MIGROS['Name'],
     hoverinfo='text',
     name = "Migros"   
@@ -150,21 +156,22 @@ def add_MIGROS(base_map):
     return base_map
 
 # Layer StatPop
-############################################
 def add_StatPop(base_map, geojson_data, squares_gdf):
     statpop_layer = go.Choroplethmapbox(
         geojson=geojson_data,
         locations=squares_gdf.index.astype(str),
         z=squares_gdf['B22BTOT'],
-        colorscale="Cividis",
-        marker_opacity=0.5,
+        colorscale='Plasma',  # Use custom "Oranges" color scale
+        marker_opacity=0.8,
         marker_line_width=0,
         showlegend=True,
         name="Population Density"
     )
-    statpop_layer['coloraxis']='coloraxis2'
+    statpop_layer['coloraxis'] = 'coloraxis2'  # Assign to coloraxis2
     base_map.add_trace(statpop_layer)
     return base_map
+
+
 
 
 
@@ -195,7 +202,7 @@ base_map.update_layout(
         )
     ),
     coloraxis2=dict(
-        colorscale="Cividis",
+        colorscale='Plasma',  # Updated to use custom "Oranges" color scale
         colorbar=dict(
             title="Population Density",
             orientation="h",  # Horizontal orientation
@@ -218,6 +225,7 @@ base_map.update_layout(
         x=0.01
     )
 )
+
 
 
 
