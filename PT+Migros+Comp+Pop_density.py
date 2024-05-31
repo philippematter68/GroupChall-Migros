@@ -11,10 +11,15 @@ import plotly.colors as pcolors
 
 # Ensure necessary imports are included at the top
 
-
+# DATA 
+#######################################################
+#######################################################
+#######################################################
 # load little files
 MIGROS = pd.read_csv('./data/Migros_Appenzell_Innerrhoden.csv')
 COMP = pd.read_csv('./data/Migros_Supermarket_Competitors_Appenzell_Innerrhoden_Filtered.csv')
+MIGROS_InAndAround = pd.read_csv('./data/Migros_Supermarket_Appenzell_Innerrhoden_InAndAround.csv')
+COMP_InAndAround= pd.read_csv('./data/Filtered_Competitors_InAndAround.csv')
 
 @st.cache_data
 def load_data(path, layer):
@@ -73,6 +78,11 @@ oranges_scale = pcolors.sequential.Oranges
 # Create a custom color scale starting from the midpoint of "Oranges"
 custom_oranges_scale = oranges_scale[len(oranges_scale)//2:]
 
+
+# LAOUYT, GRAPHS
+#######################################################
+#######################################################
+#######################################################
 # Display in Streamlit
 st.title("Migros locations in Appenzell Innerrhoden")
 
@@ -82,10 +92,19 @@ st.write('The analysis is based on: \n - the density of existing stores, \n - th
 # Layout: Checkboxes to choose which layer to display:
 st.sidebar.subheader('Layers')
 checkbox_MIGROS =st.sidebar.checkbox('Migros stores')
-checkbox_COMP = st.sidebar.checkbox('Competitors')
+checkbox_COMP = st.sidebar.checkbox('Competitors stores')
 checkbox_StatPop = st.sidebar.checkbox("Population density")
 checkbox_PT = st.sidebar.checkbox('Accessibility by public tranport')
+# Display further layers if the main ones are checked:
+if (checkbox_MIGROS==True) | (checkbox_COMP==True):
+    st.sidebar.subheader('Bonus Layers')
 
+if (checkbox_MIGROS==True)  :
+    checkbox_MIGROS_Around =st.sidebar.checkbox('All Migros stores')
+else: checkbox_MIGROS_Around = False
+if (checkbox_COMP==True):
+    checkbox_COMP_Around = st.sidebar.checkbox('All Competitors stores')
+else: checkbox_COMP_Around = False
 
 # EMPTY BASE map:
 #################################################
@@ -118,7 +137,7 @@ def add_PT(base_map):
         labels={'OeV_Erreichb_EW': 'Public Transport Accessibility'},
         color_continuous_scale="Viridis"
     )
-    PT_layer.update_traces(showlegend= True, name = 'Public Transport Accessibility')
+    PT_layer.update_traces(showlegend= True, name = 'Public Transport Accessibility (points)')
     for trace in PT_layer.data:
         trace['coloraxis']='coloraxis1'
     base_map.add_traces(PT_layer.data)
@@ -155,6 +174,7 @@ def add_MIGROS(base_map):
     return base_map
 
 # Layer StatPop
+############################################
 def add_StatPop(base_map, geojson_data, squares_gdf):
     statpop_layer = go.Choroplethmapbox(
         geojson=geojson_data,
@@ -164,35 +184,74 @@ def add_StatPop(base_map, geojson_data, squares_gdf):
         marker_opacity=0.8,
         marker_line_width=0,
         showlegend=True,
-        name="Population Density"
+        name="Population Density (inhab./ha)"
     )
     statpop_layer['coloraxis'] = 'coloraxis2'  # Assign to coloraxis2
     base_map.add_trace(statpop_layer)
     return base_map
 
+# BONUS LAYERS
+############################################
+# Layer COMPETITORS AROUND
+############################################
+def add_COMP_Around(base_map):
+    COMP_Around_layer = go.Scattermapbox(
+    lat=COMP_InAndAround['Latitude'],  
+    lon=COMP_InAndAround['Longitude'],  
+    mode='markers', 
+    marker=dict(size=15,  color='red', opacity= 0.7), 
+    text= COMP_InAndAround['Name'],
+    hoverinfo='text',
+    showlegend=False # since they are also Competitors, and anyway depicted outside of AI
+    )
+    base_map.add_trace(COMP_Around_layer)
+    return base_map
 
-
+# Layer MIGROS AROUND
+############################################
+def add_MIGROS_Around(base_map):
+    MIGROS_Around_layer = go.Scattermapbox(
+    lat=MIGROS_InAndAround['Latitude'],  
+    lon=MIGROS_InAndAround['Longitude'],  
+    mode='markers',  
+    marker=dict(size=15,  color='green', opacity=1), 
+    text= MIGROS_InAndAround['Name'],
+    hoverinfo='text',
+    showlegend=False # since they are also migros, and anyway depicted outside of AI
+    )
+    base_map.add_trace(MIGROS_Around_layer)
+    return base_map
 
 
 # Add the layers to the base map, IF CHECKED:
+# the order here below defines in which order the layers are overlaid! => Migros at the end = Migros on TOP
 
-if checkbox_COMP:
-    base_map = add_COMP(base_map)
-if checkbox_MIGROS:
-    base_map = add_MIGROS(base_map)
-if checkbox_StatPop:
-    base_map = add_StatPop(base_map, geojson_data, squares_gdf)
 if checkbox_PT:
     base_map = add_PT(base_map)
 
+if checkbox_StatPop:
+    base_map = add_StatPop(base_map, geojson_data, squares_gdf)
+
+if checkbox_COMP:
+    base_map = add_COMP(base_map)
+if checkbox_COMP_Around:
+    base_map = add_COMP_Around(base_map)
+
+if checkbox_MIGROS:
+    base_map = add_MIGROS(base_map)
+if checkbox_MIGROS_Around:
+    base_map = add_MIGROS_Around(base_map)
+
+
 # Update layout with custom figure size and horizontal color bars below the figure
+# unfortunately without scale... looks like it is not yet implemented in PLOTLY
 base_map.update_layout(
     width=1000,  # Set the desired width
     height=600,  # Set the desired height
     coloraxis1=dict(
         colorscale="Viridis", 
         colorbar=dict(
-            title="Public Transport accessibility",
+            title="P.T. accessibility (points)",
             orientation="h",  # Horizontal orientation
             x=0.75,  # Centered horizontally
             y=-0.1,  # Position below the figure
@@ -204,7 +263,7 @@ base_map.update_layout(
     coloraxis2=dict(
         colorscale='Plasma',  # Updated to use custom "Oranges" color scale
         colorbar=dict(
-            title="Population density",
+            title="Pop. density (inhab./ha)",
             orientation="h",  # Horizontal orientation
             x=0.25,  # Centered horizontally
             y=-0.1,  # Position further below the first color bar
