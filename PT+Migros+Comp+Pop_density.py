@@ -1,13 +1,15 @@
 import streamlit as st
 import pandas as pd
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from urllib.request import urlopen
 import json
-from copy import deepcopy
 from shapely.geometry import Polygon
+from copy import deepcopy
+
+# Ensure necessary imports are included at the top
+
 
 # load little files
 MIGROS = pd.read_csv('./data/Migros_Appenzell_Innerrhoden.csv')
@@ -20,8 +22,8 @@ def load_data(path, layer):
 
 @st.cache_data
 def load_statpop_data():
-    # Define the paths to your data files
-    filtered_csv_path = '/data/filtered_appenzell_innerrhoden.csv'
+    # Define the path to your filtered CSV file
+    filtered_csv_path = './data/filtered_appenzell_innerrhoden.csv'
 
     # Load the filtered data
     filtered_data = pd.read_csv(filtered_csv_path)
@@ -45,27 +47,23 @@ def load_statpop_data():
     squares_gdf.set_crs(epsg=4326, inplace=True)
 
     # Convert GeoDataFrame to GeoJSON
-    squares_geojson = squares_gdf.to_json()
-
-    # Ensure that the GeoJSON features have unique IDs that match the DataFrame's index
     geojson_data = json.loads(squares_gdf.to_json())
     for i, feature in enumerate(geojson_data['features']):
         feature['id'] = str(i)
         feature['properties']['id'] = str(i)
-    
-    return squares_gdf, geojson_data
 
+    return squares_gdf, geojson_data
 
 # Load the GeoPackage file
 gdf_raw = load_data('./data/erreichbarkeit-oev_2056.gpkg', 'Reisezeit_Erreichbarkeit')  # for speed
-gdf = deepcopy(gdf_raw) # for security
+gdf = deepcopy(gdf_raw)  # for security
 # select only APPENZELL INNERROHDEN
-APPENZELL = gdf.iloc[4163:4176,:]  # according to a visual inspection these are the indexes corresponding to AI
+APPENZELL = gdf.iloc[4163:4176, :]  # according to a visual inspection these are the indexes corresponding to AI
 # Ensure the GeoDataFrame is in WGS84 (latitude and longitude) format
 if APPENZELL.crs != "EPSG:4326":
     APPENZELL = APPENZELL.to_crs("EPSG:4326")
 
- # Load StatPop data
+# Load StatPop data
 squares_gdf, geojson_data = load_statpop_data()
 
 
@@ -81,7 +79,7 @@ checkbox_PT = st.sidebar.checkbox('Accessibility by public tranport')
 checkbox_POP = st.sidebar.checkbox('Population density')
 checkbox_COMP = st.sidebar.checkbox('Competitors')
 checkbox_MIGROS =st.sidebar.checkbox('Migros stores')
-checkbox_StatPop = st.checkbox("Show StatPop Layer")
+checkbox_StatPop = st.sidebar.checkbox("Show StatPop Layer")
 
 
 
@@ -149,8 +147,8 @@ def add_MIGROS(base_map):
     base_map.add_trace(MIGROS_layer)
     return base_map
 
-# Layer Stat_Pop
-#############################################
+# Layer StatPop
+############################################
 def add_StatPop(base_map, geojson_data, squares_gdf):
     statpop_layer = go.Choroplethmapbox(
         geojson=geojson_data,
@@ -175,7 +173,7 @@ if checkbox_MIGROS:
     st.session_state.base_map = add_MIGROS(st.session_state.base_map)
 if checkbox_POP:
     st.session_state.base_map = add_StatPop(st.session_state.base_map, geojson_data, squares_gdf)
-if not any([checkbox_PT, checkbox_COMP, checkbox_MIGROS]):
+if not any([checkbox_PT, checkbox_COMP, checkbox_MIGROS, checkbox_POP]):
     st.session_state.base_map = create_base_map()
 
 # Update legend and layout only once at the end of the code
