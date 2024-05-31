@@ -76,7 +76,6 @@ st.write('The analysis is based on: \n - the density of existing stores, \n - th
 # Layout: Checkboxes to choose which layer to display:
 st.sidebar.subheader('Layers')
 checkbox_PT = st.sidebar.checkbox('Accessibility by public tranport')
-checkbox_POP = st.sidebar.checkbox('Population density')
 checkbox_COMP = st.sidebar.checkbox('Competitors')
 checkbox_MIGROS =st.sidebar.checkbox('Migros stores')
 checkbox_StatPop = st.sidebar.checkbox("Show StatPop Layer")
@@ -95,9 +94,9 @@ def create_base_map():
     )
     return base_map
 
-# Initialize base map if not in session state
-if 'base_map' not in st.session_state:
-    st.session_state.base_map = create_base_map()
+# Create the base map
+base_map = create_base_map()
+
     
 # Layer Public transport
 ############################################
@@ -111,10 +110,13 @@ def add_PT(base_map):
         center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()},
         zoom=9.5, 
         opacity=0.5,
-        labels={'OeV_Erreichb_EW': 'Public Transport Accessibility'}
+        labels={'OeV_Erreichb_EW': 'Public Transport Accessibility'},
+        color_continuous_scale="Viridis"
     )
     PT_layer.update_traces(showlegend= True, name = 'Public Transport Accessibility')
-    base_map.add_trace(PT_layer.data[0])
+    for trace in PT_layer.data:
+        trace['coloraxis']='coloraxis1'
+    base_map.add_traces(PT_layer.data)
     return base_map
 
 # Layer COMPETITORS
@@ -154,11 +156,13 @@ def add_StatPop(base_map, geojson_data, squares_gdf):
         geojson=geojson_data,
         locations=squares_gdf.index.astype(str),
         z=squares_gdf['B22BTOT'],
-        colorscale="Viridis",
+        colorscale="Cividis",
         marker_opacity=0.5,
         marker_line_width=0,
-        name="StatPop"
+        showlegend=True,
+        name="Population Density"
     )
+    statpop_layer['coloraxis']='coloraxis2'
     base_map.add_trace(statpop_layer)
     return base_map
 
@@ -166,18 +170,47 @@ def add_StatPop(base_map, geojson_data, squares_gdf):
 
 # Add the layers to the base map, IF CHECKED:
 if checkbox_PT:
-    st.session_state.base_map = add_PT(st.session_state.base_map)
+    base_map = add_PT(base_map)
 if checkbox_COMP:
-    st.session_state.base_map = add_COMP(st.session_state.base_map)
+    base_map = add_COMP(base_map)
 if checkbox_MIGROS:
-    st.session_state.base_map = add_MIGROS(st.session_state.base_map)
-if checkbox_POP:
-    st.session_state.base_map = add_StatPop(st.session_state.base_map, geojson_data, squares_gdf)
-if not any([checkbox_PT, checkbox_COMP, checkbox_MIGROS, checkbox_POP]):
-    st.session_state.base_map = create_base_map()
+    base_map = add_MIGROS(base_map)
+if checkbox_StatPop:
+    base_map = add_StatPop(base_map, geojson_data, squares_gdf)
 
-# Update legend and layout only once at the end of the code
-st.session_state.base_map.update_layout(
+# Update layout with custom figure size and horizontal color bars below the figure
+base_map.update_layout(
+    width=1200,  # Set the desired width
+    height=800,  # Set the desired height
+    coloraxis1=dict(
+        colorscale="Viridis", 
+        colorbar=dict(
+            title="PT Accessibility",
+            orientation="h",  # Horizontal orientation
+            x=0.5,  # Centered horizontally
+            y=-0.2,  # Position below the figure
+            xanchor="center",
+            yanchor="top",
+            len=0.5  # Length of the color bar
+        )
+    ),
+    coloraxis2=dict(
+        colorscale="Cividis",
+        colorbar=dict(
+            title="Population Density",
+            orientation="h",  # Horizontal orientation
+            x=0.5,  # Centered horizontally
+            y=-0.4,  # Position further below the first color bar
+            xanchor="center",
+            yanchor="top",
+            len=0.5  # Length of the color bar
+        )
+    ),
+    mapbox=dict(
+        style="open-street-map",
+        zoom=9.5,
+        center={"lat": APPENZELL.geometry.centroid.y.mean(), "lon": APPENZELL.geometry.centroid.x.mean()}
+    ),
     legend=dict(
         yanchor="top",
         y=0.99,
@@ -185,8 +218,13 @@ st.session_state.base_map.update_layout(
         x=0.01
     )
 )
+
+
+
+
 # and display the chart:
-st.plotly_chart(st.session_state.base_map, use_container_width=True)
+st.plotly_chart(base_map, use_container_width=True)
+
 
 st.subheader('Data sources')
 st.write('Accessibility per traffic zone in public transport depending on the public transport travel times from all zones in Switzerland to the traffic zone and the number of inhabitants and jobs in the traffic zone. Source: National Passenger Traffic Model (NPVM) of DETEC.:\n https://data.geo.admin.ch/browser/index.html#/collections/ch.are.erreichbarkeit-oev?.language=en')
