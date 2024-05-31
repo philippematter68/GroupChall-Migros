@@ -21,7 +21,7 @@ def load_data(path, layer):
 @st.cache_data
 def load_statpop_data():
     # Define the paths to your data files
-    filtered_csv_path = 'path/to/filtered_appenzell_innerrhoden.csv'
+    filtered_csv_path = '/data/filtered_appenzell_innerrhoden.csv'
 
     # Load the filtered data
     filtered_data = pd.read_csv(filtered_csv_path)
