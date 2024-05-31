@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from urllib.request import urlopen
 import json
 from copy import deepcopy
-from shape;y.geometry import Polygon
+from shapely.geometry import Polygon
 
 # load little files
 MIGROS = pd.read_csv('./data/Migros_Appenzell_Innerrhoden.csv')
